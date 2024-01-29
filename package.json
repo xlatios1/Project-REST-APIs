@@ -1,0 +1,26 @@
+{
+  "name": "express-typescript",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.6",
+    "lite-server": "^2.6.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
+    "start": "lite-server"
+  },
+  "dependencies": {
+    "commonjs": "^0.0.1",
+    "express": "^4.18.2",
+    "helmet": "^7.1.0",
+    "hot-module-reload": "^0.4.1",
+    "http-status-codes": "^2.3.0",
+    "joi": "^17.12.0",
+    "ts-error": "^1.0.6"
+  }
+}
