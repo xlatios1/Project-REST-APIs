@@ -1,42 +1,48 @@
 //Security and validation
-import { Request, Response, NextFunction} from "express";
-import { EmployeeType, DepartmentType } from "../model/employee.model.ts"
+import { StatusCodes } from 'http-status-codes' //https://github.com/prettymuchbryce/http-status-codes#readme
+import { Request, Response, NextFunction } from 'express'
+import { EmployeeType, DepartmentType } from '../model/employee.model.ts'
 
-const Joi = require("joi");
+const Joi = require('joi')
 
 const employeeSchema = Joi.object({
-    name: Joi.string().min(1).required(),
-    salary: Joi.number().strict().greater(0).required(),
-    department: Joi.string().valid(DepartmentType.PS, DepartmentType.HR).insensitive().required(),
-});
+	name: Joi.string().min(1).required(),
+	salary: Joi.number().strict().greater(0).required(),
+	department: Joi.string().valid(DepartmentType.PS, DepartmentType.HR).insensitive().required(),
+})
 
-export const validateExpressBody = (req:Request, res:Response, next:NextFunction) => {
-    const { error } = employeeSchema.validate(req.body)
-    if (error) { res.status(400).json({ errorMessage: error.details })}
-    next();
-};
-
-export const ensureBody = (data:EmployeeType): EmployeeType => {
-    return {
-        id: data?.id,
-        name: data.name,
-        salary: data.salary,
-        department: data.department
-    }
+export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction) => {
+	return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: err })
 }
 
-export const isPositiveInt = (value: number): boolean => {
-    return (Number.isInteger(value) && value > 0)
+export const validateExpressBody = (req: Request, res: Response, next: NextFunction) => {
+	const { error } = employeeSchema.validate(req.body)
+	if (error) {
+		res.status(StatusCodes.BAD_REQUEST).json({ errorMessage: error })
+	} else {
+		req.body = ensureBody(req.body)
+		next()
+	}
 }
 
-export const checkIsEqual = (objA: EmployeeType, objB: EmployeeType): boolean => {
-    const keysA = Object.keys(objA) as (keyof EmployeeType)[];
-    const keysB = Object.keys(objB) as (keyof EmployeeType)[];
+export const validateParamID = (req: Request, res: Response, next: NextFunction) => {
+	const id = +req.params?.emp_id
+	if (!!id) {
+		if (Number.isInteger(id) && +id > 0) {
+			next()
+		}
+	} else {
+		return res.status(StatusCodes.BAD_REQUEST).json({
+			errorMessage: 'Employee id has to be a positive non-zero integer.',
+		})
+	}
+}
 
-    for (const key of keysA) {
-        if (!keysB.includes(key) || objA[key] !== objB[key]) {
-            return false;
-        }
-    }
-    return true;
+export const ensureBody = (data: EmployeeType): EmployeeType => {
+	return {
+		id: data?.id,
+		name: data.name,
+		salary: data.salary,
+		department: data.department,
+	}
 }

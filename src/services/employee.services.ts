@@ -1,70 +1,100 @@
 // Business logics and services
 import { StatusCodes } from 'http-status-codes'; //https://github.com/prettymuchbryce/http-status-codes#readme
-
-import { checkIsEqual } from "../services/employee.middleware.ts"
-import { DepartmentType, EmployeeType, NewExployeeType, Employee, ResponseType } from "../model/employee.model.ts"
+import { Employee } from '../model/employee.model.ts'
+import { EmployeeType, ResponseType } from '../model/employee.model.ts'
 
 export class Services {
-    employees!: EmployeeType[];
+	employees!: EmployeeType[]
 
-    constructor(){
-        this.fetchEmployee();
-    }
+	constructor() {
+		this.__establishConnection()
+	}
 
-    fetchEmployee = () =>{
-        this.employees = [new Employee(1, "One", 1000000, DepartmentType.PS), 
-                         new Employee(2, "Two", 1000000, DepartmentType.HR)] as EmployeeType[];
-    }
+	__establishConnection = async () => {
+		try {
+			// await Employee.sync() //creates tne database
+			console.log('Database sync successfully.')
+		} catch (error) {
+			console.error('Error establishing database:')
+		} finally {
+			// Step 6: Close the connection
+			console.log('/* INITIALIZED */')
+		}
+	}
 
-    getAllEmployees = ():Employee[] => {
-        return this.employees
-    }
+	getAllEmployees = async (): Promise<ResponseType> => {
+		try {
+			const allEmployees = await Employee.findAll()
+			return [StatusCodes.OK, allEmployees]
+		} catch (error) {
+			return [StatusCodes.INTERNAL_SERVER_ERROR, error]
+		}
+	}
 
-    getEmployeeByID = (id: number): ResponseType => {
-        const fetchData = this.employees.filter((data:EmployeeType)=>data.id === id)
-        if (fetchData.length === 1){
-            return [StatusCodes.OK, fetchData[0]]
-        } else if (fetchData.length === 0) {
-            return [StatusCodes.NOT_FOUND, {"errorMessage": `Update failed: Employee id:${id} not found!!`}]
-        } else {
-            return [StatusCodes.IM_A_TEAPOT, null]
-        }
-    }
+	getEmployeeByID = async (id: number): Promise<ResponseType> => {
+		try {
+			const thisEmployee = await Employee.findOne({ where: { id } })
+			if (thisEmployee) {
+				return [StatusCodes.OK, thisEmployee]
+			} else {
+				return [StatusCodes.NOT_FOUND, { errorMessage: `Fetch failed: Employee id:${id} not found!!` }]
+			}
+		} catch (error) {
+			return [StatusCodes.INTERNAL_SERVER_ERROR, error]
+		}
+	}
 
-    createEmployee = (newData: NewExployeeType): ResponseType => {
-        let i = 1
-        for ( ; i<=this.employees.length; i++){ //Finds the index that is missing
-            if (i !== this.employees[i-1].id){ break }
-        }
-        newData["id"] = i
-        this.employees.splice(i-1, 0, newData as EmployeeType);
-        return [StatusCodes.OK, newData as EmployeeType]
-    }
+	createEmployee = async (newData: EmployeeType): Promise<ResponseType> => {
+		try {
+			const newEmployee = await Employee.create({
+				name: newData.name,
+				salary: newData.salary,
+				department: newData.department.toUpperCase(),
+			})
+			return [StatusCodes.OK, newEmployee]
+		} catch (error) {
+			throw [StatusCodes.INTERNAL_SERVER_ERROR, error]
+		}
+	}
 
-    updateEmployee = (newData: EmployeeType): ResponseType => {
-        const employeeIndex = this.employees.findIndex((employee) => employee.id === newData.id)
+	updateEmployee = async (newData: EmployeeType): Promise<ResponseType> => {
+		const [_, employeeExist] = await this.getEmployeeByID(newData.id!)
+		if (employeeExist) {
+			const [affectedRowsCount, updatedRecords] = await Employee.update(
+				{
+					name: newData.name,
+					salary: newData.salary,
+					department: newData.department.toUpperCase(),
+					createdAt: 0,
+					updatedAt: 0,
+				},
+				{
+					where: { id: newData.id },
+					returning: true,
+				}
+			)
+			console.log('AAADAWAED', affectedRowsCount, updatedRecords)
+			if (+affectedRowsCount > 0) {
+				return [StatusCodes.OK, updatedRecords]
+			} else {
+				return [StatusCodes.OK, 'Data is unmodified!']
+			}
+		} else {
+			return [
+				StatusCodes.NOT_FOUND,
+				{
+					errorMessage: `Update failed: Employee id:${newData.id} not found!!`,
+				},
+			]
+		}
+	}
 
-        if (employeeIndex !== -1) { // Successfully update
-            if (checkIsEqual(this.employees[employeeIndex], newData)){
-                return [StatusCodes.OK, "Data is unmodified!"]
-            } else {
-                this.employees.splice(employeeIndex, 1, newData as EmployeeType); // Update the database on change
-                return [StatusCodes.OK, newData]
-            }
-        } else { // ID not found, no changes
-            return [StatusCodes.NOT_FOUND, {"errorMessage": `Update failed: Employee id:${newData.id} not found!!`}]
-        }
-    }
-
-    deleteEmployeeByID = (id: number): ResponseType => {
-            const oldEmployee = this.employees // Creates an old copy
-            this.employees = this.employees.filter((data:EmployeeType)=>data.id !== id) // Attempts to remove copy
-            
-            //if successfully deleted, it should not be the same length
-            if (oldEmployee.length !== this.employees.length) {
-                return [StatusCodes.NO_CONTENT, null] // Status code 204, NO CONTENT, lets the browser/client knows it doesn't have to wait for a response body.
-            } else {
-                return [StatusCodes.NOT_FOUND, {"errorMessage": `Update failed: Employee id:${id} not found!!`}]
-            }
-    }
+	deleteEmployeeByID = async (id: number): Promise<ResponseType> => {
+		const value = await Employee.destroy({ where: { id } })
+		if (value) {
+			return [StatusCodes.NO_CONTENT, null]
+		} else {
+			return [StatusCodes.NOT_FOUND, { errorMessage: `Delete failed: Employee id:${id} not found!!` }]
+		}
+	}
 }
