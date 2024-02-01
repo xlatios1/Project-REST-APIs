@@ -1,14 +1,7 @@
 //interface
-import { StatusCodes } from 'http-status-codes'; //https://github.com/prettymuchbryce/http-status-codes#readme
 import { Request, Response } from 'express'
 import { Services } from '../services/employee.services'
-import {
-	NoChangeError,
-	NotFoundError,
-	ServerError,
-	customHandleError,
-	CustomHandleErrorType,
-} from '../customErrors/CustomErrors'
+import { NoChangeError, NotFoundError, customHandleError, CustomHandleErrorType } from '../customErrors/CustomErrors'
 import { Employee } from '../model/employee.model'
 
 export class Controller {
@@ -99,10 +92,10 @@ export class Controller {
 	}
 
 	homePage = (req: Request, res: Response) => {
-		return res.status(StatusCodes.OK).json('Welcome to Employee API Services')
+		return res.status(200).json('Welcome to Employee API Services')
 	}
 
 	notFoundPage = (req: Request, res: Response) => {
-		return res.status(StatusCodes.NOT_FOUND).json({ errorMessage: '404 Method Not Found' })
+		return res.status(404).json({ errorMessage: '404 Method Not Found' })
 	}
 }
