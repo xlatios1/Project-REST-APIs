@@ -16,7 +16,7 @@ module.exports = {
 				type: Sequelize.INTEGER,
 			},
 			department: {
-				type: Sequelize.STRING,
+				type: Sequelize.ENUM('PS', 'HR'),
 			},
 			createdAt: {
 				allowNull: false,

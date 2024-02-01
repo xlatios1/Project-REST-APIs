@@ -15,8 +15,6 @@ export type EmployeeType = {
 	department: DepartmentType
 }
 
-export type ResponseType = [response_status: number, response_data: any]
-
 export class Employee extends Model {
 	public id?: number
 	public name?: string

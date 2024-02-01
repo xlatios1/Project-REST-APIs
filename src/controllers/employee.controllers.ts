@@ -2,6 +2,14 @@
 import { StatusCodes } from 'http-status-codes'; //https://github.com/prettymuchbryce/http-status-codes#readme
 import { Request, Response } from 'express'
 import { Services } from '../services/employee.services'
+import {
+	NoChangeError,
+	NotFoundError,
+	ServerError,
+	customHandleError,
+	CustomHandleErrorType,
+} from '../customErrors/CustomErrors'
+import { Employee } from '../model/employee.model'
 
 export class Controller {
 	services: Services
@@ -10,76 +18,84 @@ export class Controller {
 		this.services = new Services()
 	}
 
-	getAllEmployees = (req: Request, res: Response) => {
-		this.services
+	getAllEmployees = async (req: Request, res: Response) => {
+		return await this.services
 			.getAllEmployees()
 			.then((response) => {
-				const [response_status, response_data] = response
-				return res.status(response_status).json(response_data)
+				return res.status(200).json(response)
 			})
-			.catch((err) => {
-				const error = err as Error
-				return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: error })
+			.catch((error) => {
+				return customHandleError(res, error, 'Get All')
 			})
 	}
 
-	getEmployeeByID = (req: Request, res: Response) => {
-		this.services
-			.getEmployeeByID(+req.params.emp_id)
+	getEmployeeByID = async (req: Request, res: Response) => {
+		const id = +req.params.emp_id
+		return await this.services
+			.getEmployeeByID(id)
 			.then((response) => {
-				const [response_status, response_data] = response
-				return res.status(response_status).json(response_data)
+				if (response) {
+					return res.status(200).json(response)
+				} else {
+					throw new NotFoundError()
+				}
 			})
-			.catch((err) => {
-				const error = err as Error
-				return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: error })
+			.catch((error) => {
+				return customHandleError(res, error, 'Get', id)
 			})
 	}
 
-	createEmployee = (req: Request, res: Response) => {
-		this.services
+	createEmployee = async (req: Request, res: Response) => {
+		return await this.services
 			.createEmployee(req.body)
 			.then((response) => {
-				const [response_status, response_data] = response
-				console.log(response_status, response_data)
-				return res.status(response_status).json(response_data)
+				return res.status(200).json(response)
 			})
-			.catch((err) => {
-				const error = err as Error
-				return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: error })
+			.catch((error) => {
+				return customHandleError(res, error, 'Create', 'Unable to create employee!')
 			})
 	}
 
-	updateEmployee = (req: Request, res: Response) => {
+	updateEmployee = async (req: Request, res: Response) => {
 		let newData = req.body
-		newData['id'] = +req.params.emp_id
-
-		this.services
-			.updateEmployee(newData)
-			.then((response) => {
-				const [response_status, response_data] = response
-				// const {name, salary} = getEmployee()
-				console.log(response_status, response_data)
-				return res.status(response_status).json(response_data)
-			})
-			.catch((err) => {
-				const error = err as Error
-				return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: error })
-			})
+		const id = +req.params.emp_id
+		newData['id'] = id
+		try {
+			const getResult = (await this.services.getEmployeeByID(id)) as Employee
+			if (!getResult) {
+				throw new NotFoundError()
+			} else {
+				if (
+					getResult.dataValues.name === newData.name &&
+					getResult.dataValues.salary === newData.salary &&
+					getResult.dataValues.department === newData.department.toUpperCase()
+				) {
+					throw new NoChangeError()
+				} else {
+					const updateResult = (await this.services.updateEmployee(newData)) as [
+						affectedCount: number,
+						affectedRows: Employee[]
+					]
+					return res.status(200).json(updateResult[1][0])
+				}
+			}
+		} catch (error) {
+			return customHandleError(res, error as CustomHandleErrorType, 'Update', id)
+		}
 	}
 
-	deleteEmployeeByID = (req: Request, res: Response) => {
-		this.services
-			.deleteEmployeeByID(+req.params.emp_id)
-			.then((response) => {
-				const [response_status, response_data] = response
-				console.log(response_status, response_data)
-				return res.status(response_status).json(response_data)
-			})
-			.catch((err) => {
-				const error = err as Error
-				return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ errorMessage: error })
-			})
+	deleteEmployeeByID = async (req: Request, res: Response) => {
+		const id = +req.params.emp_id as number
+		try {
+			const deletedCounts = await this.services.deleteEmployeeByID(id)
+			if (deletedCounts || deletedCounts === 0) {
+				throw new NotFoundError()
+			} else {
+				return res.status(204).json()
+			}
+		} catch (error) {
+			return customHandleError(res, error as CustomHandleErrorType, 'Delete', id)
+		}
 	}
 
 	homePage = (req: Request, res: Response) => {

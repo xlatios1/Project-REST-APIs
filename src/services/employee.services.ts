@@ -1,7 +1,15 @@
 // Business logics and services
-import { StatusCodes } from 'http-status-codes'; //https://github.com/prettymuchbryce/http-status-codes#readme
 import { Employee } from '../model/employee.model.ts'
-import { EmployeeType, ResponseType } from '../model/employee.model.ts'
+import { EmployeeType } from '../model/employee.model.ts'
+import { CustomHandleErrorType } from '../customErrors/CustomErrors.ts'
+
+type ResponseType =
+	| Employee
+	| Employee[]
+	| CustomHandleErrorType
+	| number
+	| null
+	| [affectedCount: number, affectedRows: Employee[]]
 
 export class Services {
 	employees!: EmployeeType[]
@@ -23,78 +31,36 @@ export class Services {
 	}
 
 	getAllEmployees = async (): Promise<ResponseType> => {
-		try {
-			const allEmployees = await Employee.findAll()
-			return [StatusCodes.OK, allEmployees]
-		} catch (error) {
-			return [StatusCodes.INTERNAL_SERVER_ERROR, error]
-		}
+		return await Employee.findAll()
 	}
 
 	getEmployeeByID = async (id: number): Promise<ResponseType> => {
-		try {
-			const thisEmployee = await Employee.findOne({ where: { id } })
-			if (thisEmployee) {
-				return [StatusCodes.OK, thisEmployee]
-			} else {
-				return [StatusCodes.NOT_FOUND, { errorMessage: `Fetch failed: Employee id:${id} not found!!` }]
-			}
-		} catch (error) {
-			return [StatusCodes.INTERNAL_SERVER_ERROR, error]
-		}
+		return await Employee.findOne({ where: { id } })
 	}
 
 	createEmployee = async (newData: EmployeeType): Promise<ResponseType> => {
-		try {
-			const newEmployee = await Employee.create({
-				name: newData.name,
-				salary: newData.salary,
-				department: newData.department.toUpperCase(),
-			})
-			return [StatusCodes.OK, newEmployee]
-		} catch (error) {
-			throw [StatusCodes.INTERNAL_SERVER_ERROR, error]
-		}
+		return await Employee.create({
+			name: newData.name,
+			salary: newData.salary,
+			department: newData.department.toUpperCase(),
+		})
 	}
 
 	updateEmployee = async (newData: EmployeeType): Promise<ResponseType> => {
-		const [_, employeeExist] = await this.getEmployeeByID(newData.id!)
-		if (employeeExist) {
-			const [affectedRowsCount, updatedRecords] = await Employee.update(
-				{
-					name: newData.name,
-					salary: newData.salary,
-					department: newData.department.toUpperCase(),
-					createdAt: 0,
-					updatedAt: 0,
-				},
-				{
-					where: { id: newData.id },
-					returning: true,
-				}
-			)
-			console.log('AAADAWAED', affectedRowsCount, updatedRecords)
-			if (+affectedRowsCount > 0) {
-				return [StatusCodes.OK, updatedRecords]
-			} else {
-				return [StatusCodes.OK, 'Data is unmodified!']
+		return await Employee.update(
+			{
+				name: newData.name,
+				salary: newData.salary,
+				department: newData.department.toUpperCase(),
+			},
+			{
+				where: { id: newData.id },
+				returning: true,
 			}
-		} else {
-			return [
-				StatusCodes.NOT_FOUND,
-				{
-					errorMessage: `Update failed: Employee id:${newData.id} not found!!`,
-				},
-			]
-		}
+		)
 	}
 
 	deleteEmployeeByID = async (id: number): Promise<ResponseType> => {
-		const value = await Employee.destroy({ where: { id } })
-		if (value) {
-			return [StatusCodes.NO_CONTENT, null]
-		} else {
-			return [StatusCodes.NOT_FOUND, { errorMessage: `Delete failed: Employee id:${id} not found!!` }]
-		}
+		return await Employee.destroy({ where: { id } })
 	}
 }
