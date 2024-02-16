@@ -12,6 +12,7 @@ export class Controller {
 	}
 
 	getAllEmployees = async (req: Request, res: Response) => {
+		console.log('getAllEmployees called!')
 		return await this.services
 			.getAllEmployees()
 			.then((response) => {
@@ -45,7 +46,12 @@ export class Controller {
 				return res.status(200).json(response)
 			})
 			.catch((error) => {
-				return customHandleError(res, error, 'Create', 'Unable to create employee!')
+				return customHandleError(
+					res,
+					error,
+					'Create',
+					'Unable to create employee!'
+				)
 			})
 	}
 
@@ -65,15 +71,19 @@ export class Controller {
 				) {
 					throw new NoChangeError()
 				} else {
-					const updateResult = (await this.services.updateEmployee(newData)) as [
-						affectedCount: number,
-						affectedRows: Employee[]
-					]
+					const updateResult = (await this.services.updateEmployee(
+						newData
+					)) as [affectedCount: number, affectedRows: Employee[]]
 					return res.status(200).json(updateResult[1][0])
 				}
 			}
 		} catch (error) {
-			return customHandleError(res, error as CustomHandleErrorType, 'Update', id)
+			return customHandleError(
+				res,
+				error as CustomHandleErrorType,
+				'Update',
+				id
+			)
 		}
 	}
 
@@ -81,13 +91,19 @@ export class Controller {
 		const id = +req.params.emp_id as number
 		try {
 			const deletedCounts = await this.services.deleteEmployeeByID(id)
-			if (deletedCounts || deletedCounts === 0) {
-				throw new NotFoundError()
-			} else {
+			console.log('WHAT:', deletedCounts)
+			if (deletedCounts && +deletedCounts > 0) {
 				return res.status(204).json()
+			} else {
+				throw new NotFoundError()
 			}
 		} catch (error) {
-			return customHandleError(res, error as CustomHandleErrorType, 'Delete', id)
+			return customHandleError(
+				res,
+				error as CustomHandleErrorType,
+				'Delete',
+				id
+			)
 		}
 	}
 
