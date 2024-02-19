@@ -12,7 +12,6 @@ export class Controller {
 	}
 
 	getAllEmployees = async (req: Request, res: Response) => {
-		console.log('getAllEmployees called!')
 		return await this.services
 			.getAllEmployees()
 			.then((response) => {
@@ -91,7 +90,6 @@ export class Controller {
 		const id = +req.params.emp_id as number
 		try {
 			const deletedCounts = await this.services.deleteEmployeeByID(id)
-			console.log('WHAT:', deletedCounts)
 			if (deletedCounts && +deletedCounts > 0) {
 				return res.status(204).json()
 			} else {

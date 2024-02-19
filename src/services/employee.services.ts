@@ -31,7 +31,9 @@ export class Services {
 	}
 
 	getAllEmployees = async (): Promise<ResponseType> => {
-		return await Employee.findAll()
+		return await Employee.findAll({
+			order: [['id', 'ASC']],
+		})
 	}
 
 	getEmployeeByID = async (id: number): Promise<ResponseType> => {
