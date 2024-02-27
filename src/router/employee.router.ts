@@ -16,6 +16,7 @@ export const Router = (app: Express) => {
 		.get(validateParamID, controller.getEmployeeByID)
 		.put(validateExpressBody, validateParamID, controller.updateEmployee)
 		.delete(validateParamID, controller.deleteEmployeeByID)
+		.post(validateParamID, controller.getEmployeeByPage)
 
 	app.route('/*').all(controller.notFoundPage)
 

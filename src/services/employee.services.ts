@@ -20,10 +20,10 @@ export class Services {
 
 	__establishConnection = async () => {
 		try {
-			// await Employee.sync() //creates tne database
+			await Employee.sync() //creates the database
 			console.log('Database sync successfully.')
 		} catch (error) {
-			console.error('Error establishing database:')
+			console.error('Error establishing database:', error)
 		} finally {
 			// Step 6: Close the connection
 			console.log('/* INITIALIZED */')
@@ -33,6 +33,14 @@ export class Services {
 	getAllEmployees = async (): Promise<ResponseType> => {
 		return await Employee.findAll({
 			order: [['id', 'ASC']],
+		})
+	}
+
+	getEmployeeByPage = async (page: number): Promise<ResponseType> => {
+		return await Employee.findAll({
+			order: [['id', 'ASC']],
+			offset: (page - 1) * 10,
+			limit: 10,
 		})
 	}
 

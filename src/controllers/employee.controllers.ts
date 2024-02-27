@@ -22,6 +22,23 @@ export class Controller {
 			})
 	}
 
+	getEmployeeByPage = async (req: Request, res: Response) => {
+		const page = +req.params.emp_id
+		return await this.services
+			.getEmployeeByPage(page)
+			.then((response) => {
+				return res.status(200).json(response)
+			})
+			.catch((error) => {
+				return customHandleError(
+					res,
+					error,
+					'Create',
+					'Unable to create employee!'
+				)
+			})
+	}
+
 	getEmployeeByID = async (req: Request, res: Response) => {
 		const id = +req.params.emp_id
 		return await this.services
